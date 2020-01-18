@@ -124,9 +124,10 @@ const App = () => {
               {/*</ul>*/}
             </div>
             :
-            <div>
-              <h1>Авторизуйтесь!</h1>
-              <a href="/login">Go to login!</a>
+            <div className="register">
+                <h1>Авторизуйтесь!</h1>
+                <a href="/login">Go to login!</a>
+                <a href="/registration">Зарегистрироваться!</a>
             </div>
 
 

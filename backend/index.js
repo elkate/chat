@@ -94,6 +94,28 @@ app
         }
       });
 
+
+Router
+    .route('/registration')
+    .get((req, res) =>  res.render('register'))
+    .post(async (req,res) => {
+        const {login, password} = req.body;
+
+        const x  = await User.findOne({login});
+
+        if (x) return res.json('Пользователь с таким логином уже существует!');
+
+        const newUser = new User({login, password});
+
+        try {
+            // сохраняем пользователя в бд и возвращаем успешный ответ
+            res.status(201).json(await newUser.save());
+
+        } catch (e) {
+            await res.status(500).json('Internal Server Error');
+        }
+    });
+
     Router
         .route('/logout')
         .get((req, res) => {
@@ -118,10 +140,6 @@ ws.on('connection', (wsock) => {
 
         if (wsock.handshake.headers.cookie) {
             const login = parseCookie(wsock.handshake.headers.cookie).login;
-
-            console.log(parseCookie(wsock.handshake.headers.cookie));
-
-            console.log('login ' + login);
 
             if (login) {
                 wsock.emit('login', login);

@@ -12,6 +12,11 @@ code {
     monospace;
 }
 
+.register {
+  display: flex;
+  flex-direction: column;
+}
+
 form {
   padding-top: 80px;
   padding-bottom: 72px;
