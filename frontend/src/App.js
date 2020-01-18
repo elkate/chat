@@ -102,7 +102,7 @@ const App = () => {
 
 
               <div className="input-name" >
-                <label htmlFor="name">Ваше имя: </label>
+                <label htmlFor="name">Имя: </label>
                 <p>{username}</p>
                 <a href="/logout">Logout</a>
 
