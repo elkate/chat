@@ -53,16 +53,9 @@ form {
   outline: none;
 }
 
-.login {
-  margin: 0 auto;
-  width: 300px;
-  padding: 0 10px;
+.notlogin {
   display: flex;
-  flex-direction: column;
-}
-
-.login button {
-  margin-top: 10px;
+  align-items: center;
 }
 
 .input-name {

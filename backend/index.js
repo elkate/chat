@@ -1,5 +1,10 @@
 const [{ Server: h1 }, x] = [require('http'), require('express')];
 const socketIO = require('socket.io');
+const Router = x.Router();
+const cors = require('cors');
+const parseCookie = require('cookie').parse;
+const session = require('express-session');
+const sessionStore = require('./sessionStore');
 
 //-----
 const mg = require('mongoose');
@@ -20,6 +25,19 @@ const MessageSchema = new mg.Schema({
     type: 'String'
   },
 }, {"collection": "messages"});
+
+// модель пользователя
+const UserSchema = new mg.Schema({
+      "login": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      }
+    }, {"collection": "users"}
+);
+
+const User = conn.model('User', UserSchema);
 const Message = conn.model('Message', MessageSchema);
 
 //----
@@ -29,16 +47,66 @@ const PORT = 1234;
 const { log } = console;
 const hu = { 'Content-Type': 'text/html; charset=utf-8' };
 const app = x();
+
+
 app
-  .use(x.static('./frontend/build/'))
-  // здесь отсчёт идёт от той папки, где запускается yarn start
-  // если бы мы писали node . в этой папке (где index.js)
-  // то надо было бы брать путь '../frontend/build
+  .use(x.static('./frontend/build'))
+  .use(session({
+    secret: 'mysecret',
+    resave: true,
+    saveUninitialized: true,
+    store: sessionStore
+  }))
+  .use(Router)
 
   .use(({ res: r }) => r.status(404).end('Пока нет!'))
   .use((e, r, rs, n) => rs.status(500).end(`Ошибка: ${e}`))
-  /* .set('view engine', 'pug') */
+  .set('view engine', 'pug')
   .set('x-powered-by', false);
+
+
+  Router
+    .use(cors())
+    .use(x.json())
+    .use(x.urlencoded({ extended: true }));
+
+  Router
+      .route('/login')
+      .get((req, res) =>  res.render('login'))
+      .post(async (req,res) => {
+        const {login, password} = req.body;
+
+        const user = await User.findOne({login});
+
+
+        if (user) {
+          if (user.password === password)	{
+
+            res.cookie('auth', 'ok');
+            res.cookie('login', login);
+
+            await res.json('ok');
+          } else {
+            await res.json('Неверный	пароль!');
+          }
+        } else {
+          await res.json('Пользователь не существует!');
+        }
+      });
+
+    Router
+        .route('/logout')
+        .get((req, res) => {
+            res.clearCookie('auth');
+            res.clearCookie('login');
+            res.redirect('/');
+        });
+
+
+    Router.route('/').get((req, res) => res.sendFile('index.html'));
+
+
+
 module.exports = s = h1(app)
   .listen(process.env.PORT || PORT, () => log(process.pid));
 
@@ -48,7 +116,25 @@ const cb = (d) => log(d);
 
 ws.on('connection', (wsock) => {
 
-  console.log(wsock);
+        if (wsock.handshake.headers.cookie) {
+            const login = parseCookie(wsock.handshake.headers.cookie).login;
+
+            console.log(parseCookie(wsock.handshake.headers.cookie));
+
+            console.log('login ' + login);
+
+            if (login) {
+                wsock.emit('login', login);
+            } else {
+                wsock.emit('login', '');
+            }
+
+        } else {
+            wsock.emit('login', '');
+        }
+
+
+
   log('Новый пользователь!');
   wsock.emit('serv', 'Добро пожаловать!', cb);
 
@@ -69,7 +155,6 @@ ws.on('connect', async (wsock) => {
   });
 
   wsock.on('messages', async ({name, message}) => {
-    console.log(name, message);
     const nm = new Message({ name, message });
     await nm.save();
     wsock.emit('messages', [nm]);
