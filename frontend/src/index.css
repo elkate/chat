@@ -112,3 +112,7 @@ form {
 input[type=radio]:checked + label {
   background-color: lightgray;
 }
+
+.exp-with-fork {
+  margin: 10px;
+}
